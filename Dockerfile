@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt  # This will now install corr
 COPY src/ /app/
 
 EXPOSE 5000
-CMD ["python", "ja4_api.py"]
+CMD ["python", "run.py"]
