@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
-from ja4h import to_ja4h
-from ja4 import to_ja4
+from src.ja4h import to_ja4h
+from src.ja4 import to_ja4
 import traceback  # Add this import
 
 app = Flask(__name__)
