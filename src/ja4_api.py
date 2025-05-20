@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 from ja4h import to_ja4h
 from ja4 import to_ja4
 import traceback  # Add this import
+import subprocess
+import shlex
+import json
 
 app = Flask(__name__)
 
@@ -22,54 +25,59 @@ def handle_http(data):
         'ja4h_ro': result.get('JA4H_ro', '')
     }
 
-def handle_tls(data):
-    def to_int_list_safe(values):
-        """Convert list elements to int, supporting '0x' and str inputs."""
-        result = []
-        for v in values:
+def handle_tls():
+    cmd = ["python3", "ja4.py", "pcap/tls-handshake.pcapng", "-J"]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        raw_output = result.stdout.strip()
+
+        parsed_data = []
+        decoder = json.JSONDecoder()
+        idx = 0
+        
+        # Skip leading whitespace
+        while idx < len(raw_output) and raw_output[idx].isspace():
+            idx += 1
+
+        # Parse concatenated JSON objects
+        while idx < len(raw_output):
             try:
-                if isinstance(v, int):
-                    result.append(v)
-                elif isinstance(v, str):
-                    if v.startswith('0x') or v.startswith('0X'):
-                        result.append(int(v, 16))
-                    else:
-                        result.append(int(v))
-            except ValueError:
-                continue  # Skip invalid entries
-        return result
+                obj, idx = decoder.raw_decode(raw_output, idx)
+                parsed_data.append(obj)
+                
+                # Skip whitespace between objects
+                while idx < len(raw_output) and raw_output[idx].isspace():
+                    idx += 1
+                    
+            except json.JSONDecodeError as e:
+                return {
+                    "success": False,
+                    "error": f"JSON parsing failed at position {idx}: {str(e)}",
+                    "partial_data": parsed_data,
+                    "raw_output": raw_output
+                }
 
-    def normalize_version(v):
-        if isinstance(v, list):
-            return v[0]
-        return v
+        return {
+            "success": True,
+            "count": len(parsed_data),
+            "data": parsed_data,
+        }
 
-    x = {
-        'stream': data.get('stream', -1),
-        'hl': 'http' if data.get('http_version') == 'HTTP/1.1' else 'http2',
-        'quic': data.get('quic', False),
-        'version': normalize_version(data.get('version', '0x0304')),
-        '_ja3_hashes': {},
-        'supported_versions': data.get('supported_versions', []),
-        'alpn_list': data.get('alpn_list', []),
-        'domain': data.get('domain', '')
-    }
+    except subprocess.CalledProcessError as e:
+        return {
+            "success": False,
+            "error": "Command execution failed",
+            "stderr": e.stderr,
+            "returncode": e.returncode
+        }
 
-    # Normalize inputs to integers
-    x['ciphers'] = to_int_list_safe(data.get('ciphers', []))
-    x['extensions'] = to_int_list_safe(data.get('extensions', []))
-
-    # Optional: only if extensions contain 0x000d (13 in decimal)
-    if 13 in x['extensions'] or '0x000d' in data.get('extensions', []):
-        x['signature_algorithms'] = to_int_list_safe(data.get('signature_algorithms', []))
-
-    to_ja4(x, debug_stream=-1)
-
-    return {
-        'ja4': x.get('JA4.1', ''),
-        'ja4_raw': x.get('JA4_r.1', ''),
-        'ja4_original': x.get('JA4_o.1', '')
-    }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Unexpected error: {str(e)}",
+            "raw_output": raw_output if 'raw_output' in locals() else None
+        }
 
 
 @app.route('/ja4h', methods=['POST'])
@@ -85,11 +93,11 @@ def http():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         http_response = handle_http(data)
-        # tls_response = handle_tls(data)
+        tls_response = handle_tls()
 
         return jsonify({
             'http': http_response,
-            # 'tls': tls_response,
+            'tls': tls_response,
         })
 
     except Exception as e:
