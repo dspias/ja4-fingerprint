@@ -93,11 +93,11 @@ def http():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         http_response = handle_http(data)
-        tls_response = handle_tls()
+        # tls_response = handle_tls()
 
         return jsonify({
             'http': http_response,
-            'tls': tls_response,
+            # 'tls': tls_response,
         })
 
     except Exception as e:
