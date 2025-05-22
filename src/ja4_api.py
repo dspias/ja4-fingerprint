@@ -32,7 +32,7 @@ def capture_traffic():
 
     try:
         subprocess.run([
-            "tshark", "-i", interface,
+            "/usr/bin/tshark", "-i", interface,
             "-a", f"duration:{duration}",
             "-w", output_file
         ], check=True)
