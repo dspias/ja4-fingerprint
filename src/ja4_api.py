@@ -3,7 +3,6 @@ from ja4h import to_ja4h
 from ja4 import to_ja4
 import traceback  # Add this import
 import subprocess
-import shlex
 import json
 import os
 import time
@@ -22,11 +21,8 @@ def handle_http(data):
     }
 
     result = to_ja4h(x)
-    return {
-        'ja4h': result.get('JA4H', ''),
-        'ja4h_r': result.get('JA4H_r', ''),
-        'ja4h_ro': result.get('JA4H_ro', '')
-    }
+
+    return result.get('JA4H', '')
 
 def capture_traffic():
     interface = 'any'
@@ -112,17 +108,19 @@ def http():
         data = request.json
         
         # Validate required fields
-        required_fields = ['method', 'http_version', 'headers', 'pcap_file', 'pid']
+        # required_fields = ['method', 'http_version', 'headers', 'pcap_file', 'pid']
+        required_fields = ['method', 'http_version', 'headers']
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         http_response = handle_http(data)
-        tls_response = handle_tls(data)
+        # tls_response = handle_tls(data)
 
         return jsonify({
-            'http': http_response,
-            'tls': tls_response,
+            'ja4h_hash': http_response,
+            # 'tls': tls_response,
+            'ja4t_hash': None,
         })
 
     except Exception as e:
