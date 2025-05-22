@@ -5,6 +5,9 @@ import traceback  # Add this import
 import subprocess
 import shlex
 import json
+import os
+import time
+import signal
 
 app = Flask(__name__)
 
@@ -27,31 +30,29 @@ def handle_http(data):
 
 def capture_traffic():
     interface = 'any'
-    output_file = 'captures/live.pcap'
-    duration = 30  # capture 5 seconds of traffic
+    pcap_file = f"captures/capture_{int(time.time())}.pcap"
 
     try:
-        subprocess.run([
-            "tshark", "-i", interface,
-            # "-a", f"duration:{duration}",
-            "-w", output_file
-        ], check=True)
+        process = subprocess.Popen(
+            ["tshark", "-i", interface, "-f", "tcp port 443", "-w", pcap_file],
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            preexec_fn=os.setsid
+        )
 
-        return jsonify({
-            "status": "success",
-            "message": f"Captured traffic to {output_file}"
-        })
+        return jsonify({"status": "success", "pcap_file": pcap_file, "pid": process.pid})
 
-    except subprocess.CalledProcessError as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-def handle_tls():
-    cmd = ["python3", "ja4.py", "captures/live.pcap", "-J"]
+def handle_tls(data):
+    cmd = ["python3", "ja4.py", data['pcap_file'], "-J"]
 
     try:
+        pid = data['pid']
+        os.killpg(pid, signal.SIGTERM)
+
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         raw_output = result.stdout.strip()
 
@@ -109,16 +110,15 @@ def handle_tls():
 def http():
     try:
         data = request.json
-        app.logger.debug(f"Received data: {data}")  # Add logging
         
         # Validate required fields
-        required_fields = ['method', 'http_version', 'headers']
+        required_fields = ['method', 'http_version', 'headers', 'pcap_file', 'pid']
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         http_response = handle_http(data)
-        tls_response = handle_tls()
+        tls_response = handle_tls(data)
 
         return jsonify({
             'http': http_response,
@@ -134,6 +134,6 @@ def http():
 
 @app.route('/tls-probe', methods=['GET'])
 def tls_probe():
+    capture_traffic = capture_traffic()
 
-    capture_traffic()
-    return 'Success', 200
+    return capture_traffic
