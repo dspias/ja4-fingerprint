@@ -49,7 +49,7 @@ def capture_traffic():
         }), 500
 
 def handle_tls():
-    cmd = ["python3", "ja4.py", "captures/live.pcap", "-J", "--ja4h"]
+    cmd = ["python3", "ja4.py", "captures/live.pcap", "-J"]
 
     try:
         capture_traffic()
