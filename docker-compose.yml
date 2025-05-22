@@ -11,3 +11,6 @@ services:
     volumes:
       - ./src:/app       # Mount the 'src' directory for your Python files
     tty: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW

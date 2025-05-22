@@ -25,10 +25,35 @@ def handle_http(data):
         'ja4h_ro': result.get('JA4H_ro', '')
     }
 
-def handle_tls():
-    cmd = ["python3", "ja4.py", "pcap/tls-handshake.pcapng", "-J"]
+def capture_traffic():
+    interface = 'eth0'
+    output_file = 'captures/live.pcap'
+    duration = 5  # capture 5 seconds of traffic
 
     try:
+        subprocess.run([
+            "tshark", "-i", interface,
+            "-a", f"duration:{duration}",
+            "-w", output_file
+        ], check=True)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Captured traffic to {output_file}"
+        })
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+def handle_tls():
+    cmd = ["python3", "ja4.py", "captures/live.pcap", "-J"]
+
+    try:
+        capture_traffic()
+
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         raw_output = result.stdout.strip()
 
@@ -80,7 +105,7 @@ def handle_tls():
         }
 
 
-@app.route('/ja4h', methods=['POST'])
+@app.route('/ja4-network-hash', methods=['POST'])
 def http():
     try:
         data = request.json
@@ -93,11 +118,11 @@ def http():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         http_response = handle_http(data)
-        # tls_response = handle_tls()
+        tls_response = handle_tls()
 
         return jsonify({
             'http': http_response,
-            # 'tls': tls_response,
+            'tls': tls_response,
         })
 
     except Exception as e:
