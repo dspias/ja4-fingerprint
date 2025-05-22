@@ -26,13 +26,14 @@ def handle_http(data):
     }
 
 def capture_traffic():
-    interface = 'eth0'
+    interface = 'any'
     output_file = 'captures/live.pcap'
     duration = 5  # capture 5 seconds of traffic
 
     try:
         subprocess.run([
             "tshark", "-i", interface,
+            "-f", "tcp port 443",
             "-a", f"duration:{duration}",
             "-w", output_file
         ], check=True)
