@@ -87,6 +87,7 @@ def handle_tls():
             "success": True,
             "count": len(parsed_data),
             "data": parsed_data,
+            "raw_output": raw_output
         }
 
     except subprocess.CalledProcessError as e:
