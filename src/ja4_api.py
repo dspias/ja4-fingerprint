@@ -32,10 +32,9 @@ def capture_traffic():
 
     try:
         capture_traffic()
-        
+
         subprocess.run([
             "tshark", "-i", interface,
-            "-f", "tcp port 443",
             "-a", f"duration:{duration}",
             "-w", output_file
         ], check=True)
