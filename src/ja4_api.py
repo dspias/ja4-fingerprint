@@ -28,7 +28,7 @@ def handle_http(data):
 def capture_traffic():
     interface = 'eth0'
     output_file = 'captures/live.pcap'
-    duration = 5  # capture 5 seconds of traffic
+    duration = 10  # capture 5 seconds of traffic
 
     try:
         subprocess.run([
@@ -87,7 +87,8 @@ def handle_tls():
             "success": True,
             "count": len(parsed_data),
             "data": parsed_data,
-            "raw_output": raw_output
+            "raw_output": raw_output,
+            "code": result.returncode
         }
 
     except subprocess.CalledProcessError as e:
