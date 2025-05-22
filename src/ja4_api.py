@@ -134,6 +134,6 @@ def http():
 
 @app.route('/tls-probe', methods=['GET'])
 def tls_probe():
-    capture_traffic = capture_traffic()
+    response = capture_traffic()
 
-    return capture_traffic
+    return response
