@@ -53,8 +53,6 @@ def handle_tls():
     cmd = ["python3", "ja4.py", "captures/live.pcap", "-J"]
 
     try:
-        capture_traffic()
-
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         raw_output = result.stdout.strip()
 
@@ -134,3 +132,8 @@ def http():
             "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+@app.route('/tls-probe', methods=['GET'])
+def tls_probe():
+    capture_traffic()
+    return 'Success', 200
