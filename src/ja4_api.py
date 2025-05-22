@@ -31,8 +31,6 @@ def capture_traffic():
     duration = 5  # capture 5 seconds of traffic
 
     try:
-        capture_traffic()
-
         subprocess.run([
             "tshark", "-i", interface,
             "-a", f"duration:{duration}",
@@ -54,6 +52,8 @@ def handle_tls():
     cmd = ["python3", "ja4.py", "captures/live.pcap", "-J"]
 
     try:
+        capture_traffic()
+
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         raw_output = result.stdout.strip()
 
