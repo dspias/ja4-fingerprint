@@ -31,6 +31,8 @@ def capture_traffic():
     duration = 5  # capture 5 seconds of traffic
 
     try:
+        capture_traffic()
+        
         subprocess.run([
             "tshark", "-i", interface,
             "-f", "tcp port 443",
@@ -135,5 +137,4 @@ def http():
 
 @app.route('/tls-probe', methods=['GET'])
 def tls_probe():
-    capture_traffic()
     return 'Success', 200
