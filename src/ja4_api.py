@@ -28,11 +28,11 @@ def handle_http(data):
 def capture_traffic():
     interface = 'eth0'
     output_file = 'captures/live.pcap'
-    duration = 10  # capture 5 seconds of traffic
+    duration = 5  # capture 5 seconds of traffic
 
     try:
         subprocess.run([
-            "/usr/bin/tshark", "-i", interface,
+            "tshark", "-i", interface,
             "-a", f"duration:{duration}",
             "-w", output_file
         ], check=True)
